@@ -13,28 +13,28 @@ Postgres Utils is compatible with dbt 0.17.0 and later.
 ## Optimizers
 
 #### index ([source](macros/optimizers/index.sql))
-This macro creates an index on a given column.
+This macro creates an index on a given column. 
 
-Usage:
+Usage (at end of model definition .sql file):
 ```
 {{
 config({
     "post-hook": [
-      "{{ postgres.index(this, 'id')}}",
+      "{{ postgres_utils.index(this, 'id')}}",
     ],
     })
 }}
 ```
 
-#### unique_index ([source](macros/optimizers/uindex.sql))
+#### uindex ([source](macros/optimizers/uindex.sql))
 This macro creates an index on a given column.
 
-Usage:
+Usage (at end of model definition .sql file):
 ```
 {{
 config({
     "post-hook": [
-      "{{ postgres.unique_index(this, 'id')}}",
+      "{{ postgres_utils.uindex(this, 'id')}}",
     ],
     })
 }}

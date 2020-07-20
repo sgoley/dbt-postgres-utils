@@ -8,7 +8,7 @@ macros:
         description: Source schema name
       - name: column
         description: Source schema name
-  - name: unique_index
+  - name: uindex
     description: creates an unique index on a given column
     arguments:
       - name: this
