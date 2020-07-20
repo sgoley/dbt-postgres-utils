@@ -1,0 +1,12 @@
+version: 2
+
+macros:
+  - name: postgres__create_mat_view_as
+    description: '{{ doc("postgres__create_mat_view_as") }}'
+    arguments:
+      - name: temporary
+        description: Source schema name
+      - name: relation
+        description: Source schema name
+      - name: sql
+        description: Source schema name
