@@ -1,0 +1,17 @@
+version: 2
+
+macros:
+  - name: index
+    description: creates an index on a given column
+    arguments:
+      - name: this
+        description: Source schema name
+      - name: column
+        description: Source schema name
+  - name: unique_index
+    description: creates an unique index on a given column
+    arguments:
+      - name: this
+        description: Source schema name
+      - name: column
+        description: Source schema name
