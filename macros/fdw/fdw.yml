@@ -1,0 +1,30 @@
+version: 2
+
+macros:
+
+  #foreign data wrapper
+  - name: create_fdw_server
+    description: '{{ doc("create_fdw_server") }}'
+    arguments:
+      - name: source_schema
+        description: Source schema name
+  
+  - name: drop_fdw_server
+    description: '{{ doc("drop_fdw_server") }}'
+      
+  - name: create_fdw_user_mapping
+    description: '{{ doc("create_fdw_user_mapping") }}'
+    arguments:
+      - name: server_name
+        description: name of foreign data wrapper server
+      - name: user_name_local
+        description: user name at local server
+      - name: user_name_remote
+        description: user name at remote server
+      - name: user_pass_local
+        description: password for user of local server
+      - name: user_pass_remote
+        description: password for user of remote server
+
+  - name: drop_fdw_user_mapping
+    description: '{{ doc("drop_fdw_user_mapping") }}'

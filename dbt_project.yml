@@ -1,12 +1,9 @@
 name: 'postgres_utils'
 config-version: 2
 version: '0.0.2'
-
 require-dbt-version: ">=0.17.0"
 
-source-paths: ["models"]
 target-path: "target"
 clean-targets: ["target", "dbt_modules"]
-test-paths: ["test"]
 macro-paths: ["macros"]
 log-path: "logs"
