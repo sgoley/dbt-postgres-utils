@@ -1,0 +1,9 @@
+version: 2
+
+macros:
+    # dbt cleanup macros
+  - name: clean_all_schemas
+    description: '{{ doc("clean_all_schemas") }}'
+  
+  - name: drop_old_relations
+    description: '{{ doc("drop_old_relations") }}'
