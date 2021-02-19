@@ -1,0 +1,9 @@
+version: 2
+
+macros:
+    # custom types
+  - name: create_custom_type
+    description: '{{ doc("create_custom_type") }}'
+
+  - name: drop_custom_type
+    description: '{{ doc("drop_custom_type") }}'

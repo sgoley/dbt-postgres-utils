@@ -1,0 +1,9 @@
+version: 2
+
+macros:
+    # pg extentions
+  - name: create_pg_extension
+    description: '{{ doc("create_pg_extension") }}'
+
+  - name: drop_pg_extension
+    description: '{{ doc("drop_pg_extension") }}'

@@ -1,3 +1,8 @@
 target/
 dbt_modules/
 logs/
+
+# vs code items
+.vscode
+.vscode/
+.vscode/*
