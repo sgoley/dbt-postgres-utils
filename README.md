@@ -17,6 +17,8 @@ Postgres Utils is compatible with dbt 0.17.0 and later.
 #### index ([source](macros/optimizers/index.sql))
 This macro creates an index on a given column. 
 
+[PostgreSQL Docs: Index](https://www.postgresql.org/docs/13/indexes-intro.html)
+
 Usage (at end of model definition .sql file):
 ```
 {{
@@ -29,7 +31,9 @@ config({
 ```
 
 #### uindex ([source](macros/optimizers/uindex.sql))
-This macro creates an index on a given column.
+This macro creates an index on a given column which contains unique values (required to be fully distinct).
+
+[PostgreSQL Docs: Unique Index](https://www.postgresql.org/docs/13/indexes-intro.html)
 
 Usage (at end of model definition .sql file):
 ```
