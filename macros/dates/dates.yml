@@ -1,15 +1,48 @@
 version: 2
 
+macros:
+  - name: dateadd
+    description: Adds a specified number of date or time units to a date
+    arguments:
+      - name: datepart
+        description: The part of the date to add to (year, month, day, etc.)
+      - name: number
+        description: The number of units to add
+      - name: date
+        description: The date to add to
 
-macros: 
-    # date diff
-  - name: postgres__datediff
-    description: '{{ doc("postgres__datediff") }}'
+  - name: datediff
+    description: Returns the difference between two dates in specified units
+    arguments:
+      - name: datepart
+        description: The unit to return the difference in (year, month, day, etc.)
+      - name: startdate
+        description: The starting date
+      - name: enddate
+        description: The ending date
 
-    # date add
-  - name: postgres__dateadd
-    description: '{{ doc("postgres__dateadd") }}'
+  - name: datefromparts
+    description: Creates a date from year, month, and day integers
+    arguments:
+      - name: year
+        description: Year (1-9999)
+      - name: month
+        description: Month (1-12)
+      - name: day
+        description: Day (1-31)
 
-    # date dim
-  - name: postgres__datedim
-    description: '{{ doc("postgres__datedim") }}'
+  - name: datename
+    description: Returns a string representing the specified datepart of the specified date
+    arguments:
+      - name: datepart
+        description: The part of the date to return (year, month, weekday, etc.)
+      - name: date
+        description: The date to extract from
+
+  - name: datepart
+    description: Returns an integer representing the specified datepart of the specified date
+    arguments:
+      - name: datepart
+        description: The part of the date to return (year, month, day, etc.)
+      - name: date
+        description: The date to extract from 

@@ -1,0 +1,130 @@
+version: 2
+
+macros:
+  - name: pg_grant_core
+    description: Core macro for granting privileges on relations (tables, views, etc.)
+    arguments:
+      - name: relation
+        description: The relation (table/view) to grant privileges on
+        type: relation
+      - name: privilege
+        description: The privilege to grant (SELECT, INSERT, UPDATE, DELETE, etc.)
+        type: string
+      - name: role
+        description: The role to grant privileges to
+        type: string
+      - name: columns
+        description: Optional specific columns to grant privileges on
+        type: string|list
+        default: none
+      - name: with_grant_option
+        description: Whether to allow the grantee to grant these privileges to others
+        type: boolean
+        default: false
+
+  - name: pg_create_role
+    description: Creates a new PostgreSQL role if it doesn't exist
+    arguments:
+      - name: role_name
+        description: Name of the role to create
+        type: string
+      - name: login
+        description: Whether the role can login
+        type: boolean
+        default: false
+      - name: superuser
+        description: Whether the role has superuser privileges
+        type: boolean
+        default: false
+      - name: inherit
+        description: Whether the role inherits privileges from parent roles
+        type: boolean
+        default: true
+      - name: connection_limit
+        description: Maximum number of concurrent connections (-1 for unlimited)
+        type: integer
+        default: -1
+
+  - name: pg_grant_role
+    description: Grants one role to another role (role inheritance)
+    arguments:
+      - name: role_name
+        description: The role receiving the grant
+        type: string
+      - name: granted_role
+        description: The role being granted
+        type: string
+
+  - name: pg_grant_schema
+    description: Grants schema-level privileges and sets default privileges for future objects
+    arguments:
+      - name: schema_name
+        description: The schema to grant privileges on
+        type: string
+      - name: privilege
+        description: The privilege(s) to grant (comma-separated)
+        type: string
+      - name: role
+        description: The role to grant privileges to
+        type: string
+
+  - name: pg_grant_by_tags
+    description: Grants privileges based on dbt model tags
+    arguments:
+      - name: role
+        description: The role to grant privileges to
+        type: string
+      - name: privilege
+        description: The privilege(s) to grant
+        type: string
+      - name: include_tags
+        description: Only grant to models with these tags
+        type: list
+        default: []
+      - name: exclude_tags
+        description: Never grant to models with these tags
+        type: list
+        default: []
+
+  - name: pg_preserve_grants
+    description: Preserves existing grants when a relation is rebuilt
+    arguments:
+      - name: relation
+        description: The relation whose grants should be preserved
+        type: relation
+
+  - name: pg_record_grants
+    description: Records all current grants to a tracking table
+    arguments:
+      - name: target_schema
+        description: Schema where the grants tracking table will be created
+        type: string
+        default: public
+      - name: target_table
+        description: Name of the grants tracking table
+        type: string
+        default: grants
+
+  - name: pg_configure_access_roles
+    description: >
+      Configures a standard set of access roles and their privileges.
+      Creates analyst_role, reader_role, and reporter_role with appropriate
+      permissions based on model tags. Sensitive data is automatically
+      restricted based on tags.
+    examples: |
+      # In dbt_project.yml
+      on-run-end: "{{ pg_configure_access_roles() }}"
+
+      # In model SQL files
+      {{ config(tags=['sensitive', 'financial']) }}
+
+      # Preserve grants after model rebuild
+      {{ config(post-hook="{{ pg_preserve_grants(this) }}") }}
+
+      # Manual column-level grant
+      {{ pg_grant_core(this, 'SELECT', 'analyst_role', columns=['non_sensitive_column']) }}
+
+    tags:
+      - security
+      - postgres
+      - permissions

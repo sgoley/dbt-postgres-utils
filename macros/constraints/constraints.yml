@@ -1,0 +1,58 @@
+version: 2
+
+macros:
+  - name: pg_check_constraint
+    description: Adds a CHECK constraint to a table
+    arguments:
+      - name: model
+        description: The dbt model to add the constraint to
+      - name: column_name
+        description: The column to add the constraint to
+      - name: condition
+        description: The CHECK condition to enforce
+        
+  - name: pg_not_null
+    description: Adds a NOT NULL constraint to a column
+    arguments:
+      - name: model
+        description: The dbt model to add the constraint to
+      - name: column_name
+        description: The column to set as NOT NULL
+        
+  - name: pg_unique
+    description: Adds a UNIQUE constraint to one or more columns
+    arguments:
+      - name: model
+        description: The dbt model to add the constraint to
+      - name: column_names
+        description: Single column name or list of column names to set as unique
+        
+  - name: pg_primary_key
+    description: Adds a PRIMARY KEY constraint to one or more columns
+    arguments:
+      - name: model
+        description: The dbt model to add the constraint to
+      - name: column_names
+        description: Single column name or list of column names to set as primary key
+        
+  - name: pg_foreign_key
+    description: Adds a FOREIGN KEY constraint
+    arguments:
+      - name: model
+        description: The dbt model to add the constraint to
+      - name: column_names
+        description: Single column name or list of column names that reference another table
+      - name: reference_table
+        description: The table being referenced
+      - name: reference_columns
+        description: The columns being referenced in the reference table
+        
+  - name: pg_exclusion
+    description: Adds an EXCLUSION constraint
+    arguments:
+      - name: model
+        description: The dbt model to add the constraint to
+      - name: elements
+        description: The exclusion elements in Postgres syntax
+      - name: using
+        description: The index method to use (default 'gist') 

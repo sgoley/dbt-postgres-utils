@@ -1,0 +1,112 @@
+version: 2
+
+macros:
+  - name: index
+    description: Creates or replaces an index with configurable options
+    arguments:
+      - name: model
+        description: The model/table to create the index on
+      - name: columns
+        description: Column(s) to index (string or list)
+      - name: method
+        description: Index method (btree, hash, gist, spgist, gin, brin)
+        default: btree
+      - name: unique
+        description: Whether to create a unique index
+        default: false
+      - name: name
+        description: Custom index name (auto-generated if not specified)
+        default: none
+      - name: where
+        description: Optional WHERE clause for partial indexes
+        default: none
+      - name: include
+        description: Additional columns to include in the index
+        default: none
+      - name: fillfactor
+        description: Optional fillfactor value (1-100)
+        default: none
+      - name: concurrent
+        description: Whether to create the index concurrently
+        default: false
+
+  - name: uindex
+    description: Shorthand for creating a unique index
+    arguments:
+      - name: model
+        description: The model/table to create the index on
+      - name: columns
+        description: Column(s) to index (string or list)
+      - name: method
+        description: Index method (defaults to btree)
+        default: btree
+      - name: name
+        description: Custom index name
+        default: none
+      - name: where
+        description: Optional WHERE clause
+        default: none
+      - name: include
+        description: Additional columns to include
+        default: none
+
+  - name: gist_index
+    description: Shorthand for creating a GiST index (geometric/geographic data)
+    arguments:
+      - name: model
+        description: The model/table to create the index on
+      - name: columns
+        description: Column(s) to index (string or list)
+      - name: name
+        description: Custom index name
+        default: none
+      - name: where
+        description: Optional WHERE clause
+        default: none
+
+  - name: gin_index
+    description: Shorthand for creating a GIN index (array/jsonb data)
+    arguments:
+      - name: model
+        description: The model/table to create the index on
+      - name: columns
+        description: Column(s) to index (string or list)
+      - name: name
+        description: Custom index name
+        default: none
+      - name: where
+        description: Optional WHERE clause
+        default: none
+
+  - name: brin_index
+    description: Shorthand for creating a BRIN index (large tables)
+    arguments:
+      - name: model
+        description: The model/table to create the index on
+      - name: columns
+        description: Column(s) to index (string or list)
+      - name: name
+        description: Custom index name
+        default: none
+      - name: where
+        description: Optional WHERE clause
+        default: none
+      - name: pages_per_range
+        description: Optional pages per range setting
+        default: none
+
+  - name: partial_index
+    description: Shorthand for creating a partial index with WHERE clause
+    arguments:
+      - name: model
+        description: The model/table to create the index on
+      - name: columns
+        description: Column(s) to index (string or list)
+      - name: where
+        description: WHERE clause for the partial index
+      - name: method
+        description: Index method
+        default: btree
+      - name: name
+        description: Custom index name
+        default: none

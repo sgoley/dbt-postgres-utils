@@ -1,0 +1,14 @@
+version: 2
+
+macros: 
+    # date diff
+  - name: postgres__datediff
+    description: '{{ doc("postgres__datediff") }}'
+
+    # date add
+  - name: postgres__dateadd
+    description: '{{ doc("postgres__dateadd") }}'
+
+    # date dim
+  - name: postgres__datedim
+    description: '{{ doc("postgres__datedim") }}'

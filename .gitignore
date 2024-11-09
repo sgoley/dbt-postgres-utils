@@ -1,8 +1,15 @@
+# dbt items
 target/
 dbt_modules/
+dbt_packages/
 logs/
 
-# vs code items
+# ide items
 .vscode
 .vscode/
 .vscode/*
+
+# py/env items
+.venv
+.env
+.dbt_venv

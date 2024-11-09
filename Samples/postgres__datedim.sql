@@ -16,8 +16,8 @@ WITH date_spine AS (
             DATE_PART(quarter, date_day) AS quarter_actual,
 
             (DATE_PART(dayofweek, date_day)+1) AS day_of_week,
-            CASE WHEN day_name = 'Sun' THEN date_day
-              ELSE dateadd('day', -1, DATE_TRUNC('week', date_day)) END AS first_day_of_week,
+            -- CASE WHEN day_name = 'Sun' THEN date_day
+            --   ELSE {{ dbt_utils.dateadd('day', -1, DATE_TRUNC('week', date_day)) }} END AS first_day_of_week,
 
             CASE WHEN day_name = 'Sun' THEN WEEK(date_day) + 1
                 ELSE WEEK(date_day) END as week_of_year_temp, --remove this column
@@ -61,7 +61,7 @@ WITH date_spine AS (
             FIRST_VALUE(date_day) OVER (PARTITION BY fiscal_year ORDER BY date_day) AS first_day_of_fiscal_year,
             LAST_VALUE(date_day) OVER (PARTITION BY fiscal_year ORDER BY date_day) AS last_day_of_fiscal_year,
 
-            DATEDIFF(week, first_day_of_fiscal_year, date_actual) +1 AS  week_of_fiscal_year,
+            -- {{ dbt_utils.datediff('week', 'first_day_of_fiscal_year', 'date_actual') }} +1 AS  week_of_fiscal_year,
 
             CASE WHEN extract('month',date_day) = 1 THEN 12
                   ELSE extract('month',date_day) - 1 END AS month_of_fiscal_year,
@@ -98,7 +98,7 @@ SELECT date_day,
         year_actual,
         quarter_actual,
         day_of_week,
-        first_day_of_week,
+        -- first_day_of_week,
         week_of_year,
         day_of_month,
         day_of_quarter,
@@ -118,7 +118,7 @@ SELECT date_day,
         last_day_of_fiscal_quarter,
         first_day_of_fiscal_year,
         last_day_of_fiscal_year,
-        week_of_fiscal_year,
+        -- week_of_fiscal_year,
         month_of_fiscal_year,
         last_day_of_week,
         quarter_name,
