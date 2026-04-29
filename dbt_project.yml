@@ -1,8 +1,8 @@
 name: 'postgres_utils'
 config-version: 2
-version: '1.0.0'
+version: '1.0.1'
 
-require-dbt-version: ">=0.17.0"
+require-dbt-version: [">=0.17.0", "<3.0.0"]
 
 model-paths: ["models"]
 target-path: "target"
