@@ -1,6 +1,14 @@
 -- original credits to https://github.com/fishtown-analytics/postgres
-{% macro index(this, column) %}
+{% macro index(this, column, type=none, where=none, name=none, concurrently=false, include=none) %}
 
-create index if not exists "{{ this.name }}__index_on_{{ column }}" on {{ this }} ("{{ column }}")
+{%- set columns = postgres_utils__as_list(column) -%}
+{%- set index_name = name or postgres_utils__default_constraint_name(this, 'index_on', columns) -%}
+
+create index {% if concurrently %}concurrently {% endif %}if not exists {{ postgres_utils__quote_identifier(index_name) }}
+on {{ this }}
+{% if type %}using {{ type }} {% endif %}
+({{ postgres_utils__render_identifier_list(columns) }})
+{% if include %}include ({{ postgres_utils__render_identifier_list(include) }}){% endif %}
+{% if where %}where {{ where }}{% endif %}
 
 {% endmacro %}

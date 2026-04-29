@@ -2,16 +2,24 @@ version: 2
 
 macros:
   - name: index
-    description: creates an index on a given column
+    description: Creates a PostgreSQL index on one or more columns, with optional index method, predicate, INCLUDE columns, custom name, and concurrent creation.
     arguments:
       - name: this
-        description: Source schema name
+        description: Relation to index.
       - name: column
-        description: Source schema name
+        description: Column name or list of column names.
+      - name: type
+        description: Optional PostgreSQL index method, such as btree, hash, gin, gist, spgist, or brin.
+      - name: where
+        description: Optional predicate for a partial index.
+      - name: include
+        description: Optional non-key INCLUDE column or column list.
   - name: uindex
-    description: creates an unique index on a given column
+    description: Creates a unique PostgreSQL index on one or more columns, with the same options as index.
     arguments:
       - name: this
-        description: Source schema name
+        description: Relation to index.
       - name: column
-        description: Source schema name
+        description: Column name or list of column names.
+  - name: refresh_materialized_view
+    description: Refreshes a PostgreSQL materialized view, optionally concurrently.

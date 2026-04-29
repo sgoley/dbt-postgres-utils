@@ -1,0 +1,63 @@
+version: 2
+
+macros:
+  - name: create_extension
+    description: Creates a PostgreSQL extension if it does not already exist.
+  - name: drop_extension
+    description: Drops a PostgreSQL extension if it exists.
+  - name: create_role
+    description: Creates a PostgreSQL role if it does not already exist.
+  - name: create_user
+    description: Creates a PostgreSQL login role if it does not already exist.
+  - name: drop_role
+    description: Drops a PostgreSQL role if it exists.
+  - name: grant_role
+    description: Grants one role to another role or user.
+  - name: revoke_role
+    description: Revokes one role from another role or user.
+  - name: grant_schema_privileges
+    description: Grants privileges on a schema to a role or user.
+  - name: grant_relation_privileges
+    description: Grants privileges on a relation to a role or user.
+  - name: grant_all_tables_in_schema
+    description: Grants privileges on all current tables in a schema.
+  - name: alter_default_table_privileges
+    description: Grants privileges on future tables created in a schema.
+  - name: grant_permissions_on_target_to_role
+    description: Grants schema usage, current table privileges, and optional future table privileges on the active target schema to a role.
+  - name: grant_permissions_on_target_to_user
+    description: Grants schema usage, current table privileges, and optional future table privileges on the active target schema to a user.
+  - name: create_enum_type
+    description: Creates an enum type if it does not already exist.
+  - name: create_composite_type
+    description: Creates a composite type if it does not already exist.
+  - name: create_domain_type
+    description: Creates a domain type if it does not already exist.
+  - name: drop_type
+    description: Drops a custom type if it exists.
+  - name: add_primary_key
+    description: Adds a primary key constraint if it does not already exist.
+  - name: add_unique_key
+    description: Adds a unique key constraint if it does not already exist.
+  - name: add_foreign_key
+    description: Adds a foreign key constraint if it does not already exist.
+  - name: add_column_reference
+    description: Adds a single-column foreign key reference.
+  - name: drop_constraint
+    description: Drops a table constraint if it exists.
+  - name: create_foreign_data_wrapper
+    description: Creates a PostgreSQL foreign data wrapper.
+  - name: create_foreign_server
+    description: Creates a foreign server if it does not already exist.
+  - name: create_user_mapping
+    description: Creates a foreign server user mapping if it does not already exist.
+  - name: import_foreign_schema
+    description: Imports a remote schema through a foreign server into a local schema.
+  - name: dateadd
+    description: Returns a PostgreSQL expression that adds an interval to a date or timestamp.
+  - name: datediff
+    description: Returns a PostgreSQL expression for the difference between two dates or timestamps in the requested date part.
+  - name: date_spine
+    description: Returns a generate_series-based date spine query.
+  - name: date_dim
+    description: Returns a date dimension query with common calendar attributes.

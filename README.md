@@ -1,56 +1,396 @@
 # Postgres Utils
 
-This [dbt](https://github.com/fishtown-analytics/dbt) package contains Postgres-specific macros that can be (re)used across dbt projects.
+This [dbt](https://www.getdbt.com/) package contains dbt-native PostgreSQL macros for database management tasks that commonly sit around model builds: indexes, RBAC, extensions, custom SQL types, constraints, foreign data wrappers, materialized views, and portable date helpers such as `dateadd` and `datediff`.
 
-## Project Plan
+## Installation
 
-Available in detail on Trello [dbt-postgres-utils](https://trello.com/b/jG0KfNzl/dbt-postgres-utils) - voting enabled!
+Check [dbt Hub](https://hub.getdbt.com/sgoley/postgres_utils/latest/) for the latest installation instructions, or add the package to your `packages.yml`.
 
-## Installation Instructions
-Check [dbt Hub](https://hub.getdbt.com/sgoley/postgres_utils/latest/) for the latest installation instructions, or [read the docs](https://docs.getdbt.com/docs/package-management) for more information on installing packages.
+```yaml
+packages:
+  - package: sgoley/postgres_utils
+    version: [">=0.1.0", "<1.0.0"]
+```
 
-## Prerequisites
-Postgres Utils is compatible with dbt 0.17.0 and later.
+## Compatibility
 
-----
+Postgres Utils is compatible with dbt projects using `config-version: 2` and dbt `>=0.17.0`. This package has **no external dependencies** and works with all modern dbt versions (including 0.21.0+).
+
+**Note:** This package was previously dependent on `fishtown-analytics/dbt_utils`, which is now deprecated. The dependency has been removed, and all macros are implemented natively to ensure compatibility with current and future dbt versions.
+
+## Quick reference
+
+| Feature | Macros | Use case |
+| --- | --- | --- |
+| **Indexes** | `index`, `uindex` | Performance optimization on existing tables |
+| **Materialized views** | `materialized_view` materialization, `refresh_materialized_view` | Building and refreshing pre-computed views |
+| **RBAC** | `create_role`, `grant_*`, `alter_default_table_privileges` | Role and permission management |
+| **Extensions** | `create_extension`, `drop_extension` | Loading PostgreSQL extensions |
+| **Types** | `create_enum_type`, `create_composite_type`, `create_domain_type` | Custom data types for domain modeling |
+| **Constraints** | `add_primary_key`, `add_unique_key`, `add_foreign_key`, `add_column_reference` | Table integrity and referential relationships |
+| **Foreign data** | `create_foreign_server`, `create_user_mapping`, `import_foreign_schema` | Federated queries and external data sources |
+| **Date utilities** | `dateadd`, `datediff`, `date_spine`, `date_dim` | Portable date arithmetic and calendars |
 
 ## Optimizers
 
-#### index ([source](macros/optimizers/index.sql))
-This macro creates an index on a given column. 
+### `index`
 
-[PostgreSQL Docs: Index](https://www.postgresql.org/docs/13/indexes-intro.html)
+Creates a PostgreSQL index on one or more columns. Supports multicolumn indexes, custom index methods, partial indexes, `INCLUDE` columns, custom names, and concurrent creation.
 
-Usage (at end of model definition .sql file):
-```
+```sql
 {{
-config({
-    "post-hook": [
-      "{{ postgres_utils.index(this, 'id')}}",
-    ],
-    })
+  config(
+    post_hook=[
+      "{{ postgres_utils.index(this, ['account_id', 'created_at'], type='btree') }}",
+      "{{ postgres_utils.index(this, 'payload', type='gin', name='events_payload_gin') }}",
+      "{{ postgres_utils.index(this, 'deleted_at', where='deleted_at is not null') }}"
+    ]
+  )
 }}
 ```
 
-#### uindex ([source](macros/optimizers/uindex.sql))
-This macro creates an index on a given column which contains unique values (required to be fully distinct).
+**Index types:**
 
-[PostgreSQL Docs: Unique Index](https://www.postgresql.org/docs/13/indexes-intro.html)
+PostgreSQL supports multiple index types optimized for different use cases:
 
-Usage (at end of model definition .sql file):
-```
+| Type | Use case | Best for |
+| --- | --- | --- |
+| `btree` (default) | General-purpose balanced tree index | Equality and range queries, ORDER BY |
+| `hash` | Hash-based index | Equality searches only, faster than B-tree for equality |
+| `gist` | Generalized Search Tree | Full-text search, geometric data, range queries |
+| `spgist` | Space-Partitioned GiST | Large datasets with natural partitioning, geometric data |
+| `gin` | Generalized Inverted Index | Array columns, full-text search, JSON/JSONB queries |
+| `brin` | Block Range Index | Very large tables with monotonic columns, time-series data |
+
+**Index type examples:**
+
+```sql
 {{
-config({
-    "post-hook": [
-      "{{ postgres_utils.uindex(this, 'id')}}",
-    ],
-    })
+  config(
+    post_hook=[
+      -- B-tree: standard index for equality and range queries
+      "{{ postgres_utils.index(this, 'account_id') }}",
+      
+      -- GIN: optimized for JSON/JSONB containment and full-text search
+      "{{ postgres_utils.index(this, 'metadata', type='gin') }}",
+      
+      -- GIN array: for array column operations
+      "{{ postgres_utils.index(this, 'tags', type='gin') }}",
+      
+      -- BRIN: space-efficient for large monotonic columns
+      "{{ postgres_utils.index(this, 'created_at', type='brin') }}",
+      
+      -- GiST: for geometric or full-text search
+      "{{ postgres_utils.index(this, 'document', type='gist') }}",
+      
+      -- Hash: for equality-only lookups
+      "{{ postgres_utils.index(this, 'status', type='hash') }}"
+    ]
+  )
 }}
 ```
 
+**Index parameters:**
+- `column`: Single column name or list of column names
+- `type`: Index method (`btree`, `hash`, `gist`, `spgist`, `gin`, `brin`)
+- `where`: Optional predicate for partial index
+- `include`: Optional non-key columns to include (B-tree only)
+- `name`: Custom index name (auto-generated by default)
+- `concurrently`: `true` to build index without locking table
 
-## Acknowlegements
+### `uindex`
 
-This project extends fishtown-analytics's own postgres project available here:
+Creates a unique index with the same options as `index`.
 
-https://github.com/fishtown-analytics/postgres (source of index macro)
+```sql
+{{
+  config(
+    post_hook=[
+      "{{ postgres_utils.uindex(this, ['tenant_id', 'external_id']) }}"
+    ]
+  )
+}}
+```
+
+### `refresh_materialized_view`
+
+Refreshes a materialized view, optionally using `concurrently`. Can be used as a standalone hook or within the materialized view materialization.
+
+```sql
+{{ postgres_utils.refresh_materialized_view(ref('daily_rollup'), concurrently=true) }}
+```
+
+**Parameters:**
+- `relation`: The materialized view to refresh
+- `concurrently` (bool, default: `false`): Use concurrent refresh to avoid locking during the refresh operation
+
+## PostgreSQL materialized views
+
+Use `materialized='materialized_view'` to build a model as a PostgreSQL materialized view. On first run or `--full-refresh`, dbt recreates the materialized view; otherwise it refreshes the existing view.
+
+```sql
+{{
+  config(
+    materialized='materialized_view',
+    indexes=[
+      {'columns': ['account_id', 'date_day']},
+      {'columns': ['date_day'], 'unique': false}
+    ],
+    refresh_concurrently=false
+  )
+}}
+
+select account_id, date_trunc('day', created_at)::date as date_day, count(*) as events
+from {{ ref('events') }}
+group by 1, 2
+```
+
+## RBAC
+
+RBAC macros are designed for `on-run-start`, `on-run-end`, and model hooks. Role and permission management integrates with your dbt workflows to enforce security and access control.
+
+```yaml
+on-run-start:
+  - "{{ postgres_utils.create_role('analytics_reader') }}"
+  - "{{ postgres_utils.create_role('analysts', createdb=false) }}"
+  - "{{ postgres_utils.grant_role('analysts', 'analytics_reader') }}"
+
+on-run-end:
+  - "{{ postgres_utils.grant_permissions_on_target_to_role('analytics_reader') }}"
+  - "{{ postgres_utils.grant_permissions_on_target_to_user('bi_user', privileges=['select']) }}"
+```
+
+Available RBAC helpers include:
+
+| Macro | Purpose |
+| --- | --- |
+| `create_role(role_name, login=false, ...)` | Create a role (or `create_user` with `login=true`) |
+| `drop_role`, `drop_user` | Remove roles or login roles |
+| `grant_role(role_name, grantee)` | Assign a role to another role or user |
+| `revoke_role(role_name, grantee)` | Remove role membership |
+| `grant_schema_privileges(schema, grantee, privileges='usage')` | Grant privileges on schema |
+| `revoke_schema_privileges(schema, grantee, privileges='usage')` | Revoke schema privileges |
+| `grant_relation_privileges(relation, grantee, privileges='select')` | Grant privileges on table/view |
+| `revoke_relation_privileges(relation, grantee, privileges='select')` | Revoke relation privileges |
+| `grant_all_tables_in_schema(schema, grantee, privileges='select')` | Grant on all current tables in schema |
+| `grant_all_sequences_in_schema(schema, grantee, privileges='usage')` | Grant on all sequences in schema |
+| `alter_default_table_privileges(schema, grantee, privileges='select', owner=none)` | Grant on future tables |
+| `grant_permissions_on_target_to_role(role_name, privileges='select', ...)` | Shorthand: grants schema usage, current and future table privileges on `target.schema` |
+| `grant_permissions_on_target_to_user(user_name, privileges='select', ...)` | Same as above for users |
+
+## Extensions
+
+```yaml
+on-run-start:
+  - "{{ postgres_utils.create_extension('postgres_fdw') }}"
+  - "{{ postgres_utils.create_extension('uuid-ossp', schema='public') }}"
+```
+
+```sql
+{{ postgres_utils.drop_extension('postgres_fdw', cascade=true) }}
+```
+
+## Custom SQL types
+
+Create enum, composite, and domain types in hooks before dependent models run. Custom types enable domain-driven design patterns within PostgreSQL.
+
+### Enum types
+
+Ordered list of distinct values.
+
+```yaml
+on-run-start:
+  - "{{ postgres_utils.create_enum_type('order_status', ['pending', 'paid', 'shipped', 'delivered'], schema=target.schema) }}"
+```
+
+### Composite types
+
+Structured record types with named attributes.
+
+```yaml
+on-run-start:
+  - "{{ postgres_utils.create_composite_type('address_type', {'street': 'text', 'city': 'text', 'postal_code': 'text', 'country': 'text'}, schema=target.schema) }}"
+```
+
+### Domain types
+
+Custom base types with constraints and defaults.
+
+```yaml
+on-run-start:
+  - "{{ postgres_utils.create_domain_type('positive_int', 'integer', schema=target.schema, check='value > 0') }}"
+  - "{{ postgres_utils.create_domain_type('email', 'text', schema=target.schema, check='value ~ \\'@\\''') }}"
+```
+
+Drop types with:
+```sql
+{{ postgres_utils.drop_type(type_name, schema=target.schema, cascade=false) }}
+```
+
+## Keys and constraints
+
+Use constraints as post-hooks after a model has been created. Constraints enforce data integrity rules at the database level.
+
+```sql
+{{
+  config(
+    post_hook=[
+      "{{ postgres_utils.add_primary_key(this, 'id') }}",
+      "{{ postgres_utils.add_unique_key(this, ['tenant_id', 'external_id']) }}",
+      "{{ postgres_utils.add_column_reference(this, 'account_id', ref('accounts'), 'id', on_delete='cascade') }}"
+    ]
+  )
+}}
+```
+
+**Constraint macros:**
+
+| Macro | Description |
+| --- | --- |
+| `add_primary_key(relation, columns, constraint_name=none)` | Add primary key constraint |
+| `add_unique_key(relation, columns, constraint_name=none)` | Add unique constraint |
+| `add_foreign_key(relation, columns, foreign_relation, foreign_columns, ...)` | Add foreign key with optional cascade behavior |
+| `add_column_reference(relation, column, foreign_relation, foreign_column='id', ...)` | Shorthand for single-column foreign key |
+| `drop_constraint(relation, constraint_name, cascade=false)` | Remove a constraint |
+
+**Foreign key options:**
+- `on_delete`: `'cascade'`, `'set null'`, `'restrict'`, `'set default'`
+- `on_update`: Same as `on_delete`
+- `deferrable`: `true` to make constraint deferrable
+- `initially_deferred`: `true` to defer checking by default
+
+## Foreign data wrappers
+
+The FDW macros enable federated queries across PostgreSQL and other data sources. Typical workflow: create extension → create server → create user mapping → import schema.
+
+```yaml
+on-run-start:
+  - "{{ postgres_utils.create_extension('postgres_fdw') }}"
+  - "{{ postgres_utils.create_foreign_server('warehouse_remote', 'postgres_fdw', options={'host': env_var('REMOTE_HOST'), 'dbname': 'warehouse', 'port': '5432'}) }}"
+  - "{{ postgres_utils.create_user_mapping('warehouse_remote', user_name='current_user', options={'user': env_var('REMOTE_USER'), 'password': env_var('REMOTE_PASSWORD')}) }}"
+  - "{{ postgres_utils.import_foreign_schema('public', 'warehouse_remote', local_schema=target.schema, limit_to=['customers', 'orders']) }}"
+```
+
+**FDW macros:**
+
+| Macro | Purpose |
+| --- | --- |
+| `create_foreign_data_wrapper(wrapper_name, handler=none, validator=none)` | Create a FDW (typically part of an extension) |
+| `drop_foreign_data_wrapper(wrapper_name, cascade=false)` | Remove a FDW |
+| `create_foreign_server(server_name, foreign_data_wrapper, options=none, type=none, version=none)` | Register remote server |
+| `drop_foreign_server(server_name, cascade=false)` | Unregister a foreign server |
+| `create_user_mapping(server_name, user_name='current_user', options=none)` | Map local user to remote credentials |
+| `drop_user_mapping(server_name, user_name='current_user')` | Remove user mapping |
+| `import_foreign_schema(remote_schema, server_name, local_schema=target.schema, limit_to=none, except_tables=none, options=none)` | Import remote tables as foreign tables |
+
+Use `except_tables=['table_name']` to exclude specific remote tables during import.
+
+## Date functions
+
+Date functions provide SQL-portable ways to work with dates and timestamps in dbt models, enabling code reuse across different databases.
+
+### `dateadd`
+
+Returns a PostgreSQL expression for date/timestamp arithmetic, equivalent to SQL Server's `DATEADD` function.
+
+```sql
+select 
+  created_at,
+  {{ postgres_utils.dateadd('day', 7, 'created_at') }} as created_plus_7_days,
+  {{ postgres_utils.dateadd('month', 3, 'created_at') }} as created_plus_3_months,
+  {{ postgres_utils.dateadd('hour', -2, 'updated_at') }} as updated_minus_2_hours
+from {{ ref('events') }}
+```
+
+**Supported date parts:** `year`, `quarter`, `month`, `week`, `day`, `hour`, `minute`, `second`, `millisecond`, `microsecond`
+
+### `datediff`
+
+Returns a PostgreSQL expression for the difference between two dates or timestamps, equivalent to SQL Server's `DATEDIFF` function. Returns the number of complete periods between dates.
+
+```sql
+select 
+  order_id,
+  created_at,
+  completed_at,
+  {{ postgres_utils.datediff('day', 'created_at', 'completed_at') }} as days_to_complete,
+  {{ postgres_utils.datediff('hour', 'created_at', 'completed_at') }} as hours_to_complete
+from {{ ref('orders') }}
+```
+
+**Supported date parts:** `year`, `quarter`, `month`, `week`, `day`, `hour`, `minute`, `second`, `millisecond`, `microsecond`
+
+### `date_spine`
+
+Generates a date series between two dates at a specified interval. Useful for creating scaffold queries.
+
+```sql
+{{ postgres_utils.date_spine('day', "'2023-01-01'::date", "'2023-12-31'::date") }}
+```
+
+### `date_dim`
+
+Returns a complete date dimension query with common calendar attributes, ready to use as a model.
+
+```sql
+{{
+  config(
+    materialized='table'
+  )
+}}
+
+{{ postgres_utils.date_dim("'2020-01-01'::date", "'2030-12-31'::date") }}
+```
+
+**Columns included:**
+- `date_day`: The date
+- `year_number`, `quarter_number`, `month_number`: Calendar periods
+- `day_of_month`, `day_of_year`: Day identifiers
+- `iso_day_of_week`, `iso_week_number`: ISO week info
+- `week_start_date`, `month_start_date`, `month_end_date`: Period boundaries
+- `quarter_start_date`, `quarter_end_date`: Quarter boundaries
+- `year_start_date`, `year_end_date`: Year boundaries
+
+## Helper macros (internal)
+
+The following macros are used internally by other package macros and are available for advanced use cases:
+
+| Macro | Purpose |
+| --- | --- |
+| `postgres_utils__as_list(value)` | Converts a string to single-item list or returns list as-is |
+| `postgres_utils__quote_identifier(identifier)` | Safely quote a single identifier for SQL |
+| `postgres_utils__quote_qualified_identifier(identifier)` | Quote schema-qualified names (e.g., `schema.table`) |
+| `postgres_utils__escape_literal(value)` | Escape single quotes in string literals |
+| `postgres_utils__render_identifier_list(identifiers)` | Render comma-separated quoted identifiers |
+| `postgres_utils__render_csv(values)` | Render comma-separated values |
+| `postgres_utils__render_literal_list(values)` | Render comma-separated quoted string literals |
+| `postgres_utils__render_options(options)` | Render FDW options dict as PostgreSQL OPTIONS clause |
+| `postgres_utils__default_constraint_name(relation, prefix, columns)` | Generate constraint names following package convention |
+
+## Troubleshooting
+
+### dbt version compatibility errors
+
+**Problem:** "This version of dbt is not supported with the 'dbt_utils' package"
+
+**Solution:** This error is caused by deprecated `fishtown-analytics/dbt_utils` package constraints. Postgres Utils has no external dependencies and is compatible with all modern dbt versions. Ensure your `packages.yml` does not reference the old package or run `dbt deps --upgrade` to resolve.
+
+### Index creation fails on concurrent refresh
+
+**Problem:** "CREATE INDEX CONCURRENTLY cannot be used with IF NOT EXISTS"
+
+**Solution:** PostgreSQL does not allow combining `CONCURRENTLY` and `IF NOT EXISTS`. When using `concurrently=true`, ensure the index does not already exist. Consider using `--full-refresh` when adding new indexes.
+
+### Permission denied errors in RBAC macros
+
+**Problem:** "Permission denied" when running grant/revoke macros
+
+**Solution:** Ensure the user running dbt has sufficient privileges to grant/revoke permissions. Typically requires superuser or role owner permissions. Run RBAC macros in `on-run-start` hooks with appropriate credentials.
+
+## Contributing
+
+Issues, feature requests, and pull requests are welcome on [GitHub](https://github.com/sgoley/dbt-postgres-utils).
+
+## Acknowledgements
+
+This project extends the original dbt PostgreSQL utility work from [fishtown-analytics](https://github.com/fishtown-analytics/postgres), including the initial index macro pattern. It is built and maintained by the dbt community for the dbt community.
